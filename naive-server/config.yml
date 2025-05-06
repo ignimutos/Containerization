@@ -1,0 +1,5 @@
+targets:
+  - version: |
+      github_tag caddyserver/caddy
+    sha: |
+      github_sha klzgrad/forwardproxy

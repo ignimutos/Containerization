@@ -1,0 +1,2 @@
+#!/bin/ash
+caddy reload --config /etc/caddy/Caddyfile
