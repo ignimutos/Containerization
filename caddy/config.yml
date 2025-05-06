@@ -1,3 +1,5 @@
 targets:
   - version: |
-      github_tag klzgrad/naiveproxy
+      github_tag caddyserver/caddy
+    sha: |
+      github_sha caddy-dns/cloudflare caddyserver/transform-encoder greenpau/caddy-security greenpau/caddy-trace

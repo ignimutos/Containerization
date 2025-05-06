@@ -13,12 +13,17 @@ github_tag() {
 }
 
 github_sha() {
-  if [[ -z $1 ]]; then
+  if [[ $# -eq 0 ]]; then
     echo "Error: github_tag param not present"
     return 1cat
   fi
-  curl -s $github_header \
-    "https://api.github.com/repos/$1/commits?per_page=1&page=1" | jq -r '.[0].sha'
+  targets=($@)
+  sha=()
+  for target in $targets; do
+    sha+=($(curl -s $github_header \
+      "https://api.github.com/repos/$target/commits?per_page=1&page=1" | jq -r '.[0].sha'))
+  done
+  echo ${sha[*]} | sha256sum | cut -d' ' -f1
 }
 
 regex_match() {
