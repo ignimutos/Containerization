@@ -46,11 +46,25 @@ build() {
       build_target="--target $name"
     fi
 
+    local dockerfile=$(yq '.dockerfile // "Dockerfile"' <<<$target)
+
     if [[ $DEBUG == "true" ]]; then
-      docker build --load $build_target --build-arg version=$version -t $REGISTRY_USER/$repo:$latest .
+      docker build \
+        --load $build_target \
+        --build-arg version=$version \
+        -t $REGISTRY_USER/$repo:$latest \
+        -f $dockerfile \
+        .
       docker tag $REGISTRY_USER/$repo:${prefix}latest $REGISTRY_USER/$repo:$latest_version
     else
-      docker buildx build --push $build_target --platform $PLATFORM --build-arg version=$version -t $REGISTRY_USER/$repo:$latest_version -t $REGISTRY_USER/$repo:$latest .
+      docker buildx build \
+        --push $build_target \
+        --platform $PLATFORM \
+        --build-arg version=$version \
+        -t $REGISTRY_USER/$repo:$latest_version \
+        -t $REGISTRY_USER/$repo:$latest \
+        -f $dockerfile \
+        .
     fi
   done
   popd
