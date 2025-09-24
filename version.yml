@@ -1,5 +1,5 @@
 nezha-agent: 1.13.1
-caddy: 2.10.2-cc765bc4680ec2f9bb8d2f81f295e34d35e50d7bc0a9357f744bc11afeed6b24
+caddy: 2.10.2-0bba78374e86b0b7a365d92ac1190c74c15db83594d8e725924bced652825f39
 tor2socks: 0.4.8.18-r1
 tor2socks-obfs: 0.4.8.18-r1-0.6.1-r5
 naive-client: 140.0.7339.123-1
