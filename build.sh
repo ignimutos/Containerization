@@ -36,7 +36,6 @@ build() {
       echo "is newest version: $version"
       continue
     fi
-
     local latest=$(union $name latest)
     local latest_version=$(union $name $version)
     local build_target
@@ -47,6 +46,7 @@ build() {
     fi
 
     local dockerfile=$(yq '.dockerfile // "Dockerfile"' <<<$target)
+    echo "Build name: $name, version: $version, dockerfile: $dockerfile"
 
     if [[ $DEBUG == "true" ]]; then
       docker build \
@@ -75,7 +75,6 @@ checkver() {
   local version=$(union $3 $4)
   touch "$version_dir/version.yml"
   version_last=$(yq '."'$path'" // ""' "$version_dir/version.yml")
-  echo $version,$version_last
   if [[ $version == $version_last ]]; then
     return 1
   elif [[ -n $version ]]; then

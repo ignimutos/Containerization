@@ -6,7 +6,7 @@ fi
 
 github_tag() {
   if [[ -z $1 ]]; then
-    echo "Error: github_tag param not present"
+    echo "Error: param not present"
     return 1
   fi
   curl -s ${github_opts[@]} "https://api.github.com/repos/$1/tags?per_page=1&page=1" | jq -r '.[0].name' | sed 's/^v//'
@@ -14,8 +14,8 @@ github_tag() {
 
 github_sha() {
   if [[ $# -eq 0 ]]; then
-    echo "Error: github_tag param not present"
-    return 1cat
+    echo "Error: param not present"
+    return 1
   fi
   targets=($@)
   sha=()
@@ -24,6 +24,17 @@ github_sha() {
       "https://api.github.com/repos/$target/commits?per_page=1&page=1" | jq -r '.[0].sha'))
   done
   echo ${sha[*]} | sha256sum | cut -d' ' -f1
+}
+
+alpine_pkg() {
+  if [[ $# -eq 0 ]]; then
+    echo "Error: param not present"
+    return 1
+  fi
+  local target=$1
+  local branch=${2:-v3.21}
+  local repository=${3:-main}
+  regex_match "https://pkgs.alpinelinux.org/package/$branch/$repository/x86_64/$target" "<strong>(.*)<\/strong>"
 }
 
 regex_match() {
