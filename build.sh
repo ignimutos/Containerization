@@ -51,7 +51,7 @@ build() {
     if [[ $DEBUG == "true" ]]; then
       docker build \
         --load $build_target \
-        --build-arg version=$version \
+        --build-arg VERSION=$version \
         -t $REGISTRY_USER/$repo:$latest \
         -f $dockerfile \
         .
@@ -60,11 +60,15 @@ build() {
       docker buildx build \
         --push $build_target \
         --platform $PLATFORM \
-        --build-arg version=$version \
+        --build-arg VERSION=$version \
         -t $REGISTRY_USER/$repo:$latest_version \
         -t $REGISTRY_USER/$repo:$latest \
         -f $dockerfile \
         .
+    fi
+    if $? -ne 0; then
+      echo 2>&1 "Failed to build $REGISTRY_USER/$repo:$latest_version"
+      exit 1
     fi
   done
   popd
@@ -98,6 +102,8 @@ union() {
 
 set -e
 base_dir=$(cd "$(dirname "$0")" &>/dev/null && pwd)
+source "$base_dir/methods.sh"
+export -f github_tag github_sha alpine_pkg
 version_dir=$(realpath -m "$base_dir/../version")
 if [[ $# -eq 0 ]]; then
   find "$base_dir" -mindepth 1 -maxdepth 1 -type d ! -name ".git*" | while read -r dir; do

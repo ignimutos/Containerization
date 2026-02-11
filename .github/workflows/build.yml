@@ -71,9 +71,6 @@ jobs:
       - name: Build
         run: |
           cd main
-          set -a
-          source methods.sh
-          set +a
           if [[ -z $TARGETS ]]; then
             bash build.sh
           else

@@ -1,6 +1,6 @@
 FROM alpine:latest AS builder
 
-ARG VERSION=136.0.7103.44-1
+ARG VERSION=143.0.7499.109-2
 
 RUN apk add --no-cache wget xz; \
   set -eux; \
