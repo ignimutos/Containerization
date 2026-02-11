@@ -15,6 +15,7 @@ check_var "$USER" "USER"
 check_var "$PASS" "PASS"
 check_var "$REVERSE_SERVER" "REVERSE_SERVER"
 
+
 if [ -e /etc/caddy/Caddyfile ]; then
   cat <<EOF >/etc/caddy/Caddyfile
 {
