@@ -66,23 +66,33 @@ jobs:
         env:
           DIRS: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          declare -a target_dirs=()
+          # 初始化空字符串存储目标目录
+          TARGETS=""
 
-          # 遍历所有变更文件路径
+          # 遍历所有变更文件路径（兼容多路径空格分隔的情况）
           for file_path in $DIRS; do
+            # 打印当前遍历的文件路径（调试用）
+            echo "当前处理的路径：$file_path"
+
             # 提取第一层级目录（分割第一个/前的部分）
             first_level_dir=$(echo "$file_path" | cut -d '/' -f 1)
+            echo "提取的第一层级目录：$first_level_dir"
 
-            # 跳过空值（避免无意义的空目录）
-            if [ -n "$first_level_dir" ] && [ "$first_level_dir" != "$file_path" ]; then
-              # 去重：仅当目录未在数组中时添加
-              if [[ ! " ${target_dirs[@]} " =~ " ${first_level_dir} " ]]; then
-                target_dirs+=("$first_level_dir")
-              fi
+            # 仅保留有层级的目录（排除根文件，如README.md）
+            if [ -n "$first_level_dir" ] && [[ "$file_path" == */* ]]; then
+              # 将提取的目录追加到TARGETS（暂不去重）
+              TARGETS+="$first_level_dir "
             fi
           done
 
-          echo "TARGETS=${target_dirs[*]}" >> $GITHUB_ENV
+          # 去重（多路径场景去重，单路径不影响）+ 去除末尾空格
+          TARGETS=$(echo "$TARGETS" | xargs -n1 | sort -u | xargs)
+
+          # 输出最终结果（调试用）
+          echo "最终提取的目录：$TARGETS"
+
+          # 赋值给GITHUB_ENV
+          echo "TARGETS=${TARGETS}" >> $GITHUB_ENV
 
           echo "变动的容器：${TARGETS}"
 
