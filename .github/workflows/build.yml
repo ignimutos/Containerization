@@ -66,7 +66,25 @@ jobs:
         env:
           DIRS: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          echo "TARGETS=${DIRS[*]}" >> $GITHUB_ENV
+          declare -a target_dirs=()
+
+          # 遍历所有变更文件路径
+          for file_path in $DIRS; do
+            # 提取第一层级目录（分割第一个/前的部分）
+            first_level_dir=$(echo "$file_path" | cut -d '/' -f 1)
+
+            # 跳过空值（避免无意义的空目录）
+            if [ -n "$first_level_dir" ] && [ "$first_level_dir" != "$file_path" ]; then
+              # 去重：仅当目录未在数组中时添加
+              if [[ ! " ${target_dirs[@]} " =~ " ${first_level_dir} " ]]; then
+                target_dirs+=("$first_level_dir")
+              fi
+            fi
+          done
+
+          echo "TARGETS=${target_dirs[*]}" >> $GITHUB_ENV
+
+          echo "变动的容器：${TARGETS}"
 
       - name: Build
         run: |
