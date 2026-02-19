@@ -1,4 +1,4 @@
-nezha-agent: 2.0.0
+nezha-agent: 2.0.1
 caddy: 2.11.0-beta.2-ace12ff084b00d5b183b16ad5ade8750d0eff7b0015e5668e7ac463b384a968c
 tor2socks: 0.4.8.22-r0
 tor2socks-obfs: 0.4.8.22-r0-0.8.1-r2
