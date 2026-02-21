@@ -1,0 +1,3 @@
+targets:
+  - version: |
+      github_tag PikuZheng/smartdns "\.v([^_]+)_"

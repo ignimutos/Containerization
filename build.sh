@@ -2,28 +2,29 @@
 build() {
   local dir=$1
   pushd "$dir"
-  if [[ ! -s config.yml ]]; then
-    echo 2>&1 "config.yml not found"
-    exit 1
+  local config
+  if [[ -s config.yml ]]; then
+    config=$(cat config.yml)
+  else
+    config=""
   fi
-  local config=$(cat config.yml)
   local repo=$(yq '.name // "'$(basename $dir)'"' <<<$config)
   local version_top=$(yq '.version // ""' <<<$config)
   if [[ -n version_top ]]; then
     version_top=$(bash -c "$version_top")
   fi
-  for ((i = 0; ; i++)); do
+  local count=$(yq '.targets | length' <<<$config)
+  if [[ $count -eq 0 ]]; then
+    # run at least once
+    count=1
+  fi
+  for ((i = 0; i < count; i++)); do
     local target=$(yq '.targets['$i'] // ""' <<<$config)
-    if [[ -z $target ]]; then
-      break
-    fi
-
     local version=$(yq '.version // ""' <<<$target)
     if [[ -z $version ]]; then
-      if [[ -z $version_top ]]; then
-        break
+      if [[ -n $version_top ]]; then
+        version=$version_top
       fi
-      version=$version_top
     else
       version=$(bash -c "$version")
     fi
@@ -55,20 +56,28 @@ build() {
         -t $REGISTRY_USER/$repo:$latest \
         -f $dockerfile \
         .
-      docker tag $REGISTRY_USER/$repo:${prefix}latest $REGISTRY_USER/$repo:$latest_version
+      if [[ -n $latest_version ]]; then
+        docker tag $REGISTRY_USER/$repo:$latest $REGISTRY_USER/$repo:$latest_version
+      fi
     else
+      local latest_version_tag
+      if [[ -z $latest_version ]]; then
+        latest_version_tag=""
+      else
+        latest_version_tag="-t $REGISTRY_USER/$repo:$latest_version"
+      fi
       docker buildx build \
         --push $build_target \
         --platform $PLATFORM \
         --build-arg VERSION=$version \
-        -t $REGISTRY_USER/$repo:$latest_version \
+        $latest_version_tag \
         -t $REGISTRY_USER/$repo:$latest \
         -f $dockerfile \
         .
-    fi
-    if $? -ne 0; then
-      echo 2>&1 "Failed to build $REGISTRY_USER/$repo:$latest_version"
-      exit 1
+      if $? -ne 0; then
+        echo 2>&1 "Failed to build $REGISTRY_USER/$repo:$latest_version"
+        exit 1
+      fi
     fi
   done
   popd
@@ -77,12 +86,12 @@ build() {
 checkver() {
   local path=$(union $1 $2)
   local version=$(union $3 $4)
-  touch "$version_dir/version.yml"
-  version_last=$(yq '."'$path'" // ""' "$version_dir/version.yml")
+  touch "$version_file"
+  version_last=$(yq '."'$path'" // ""' "$version_file")
   if [[ $version == $version_last ]]; then
     return 1
   elif [[ -n $version ]]; then
-    yq -i '.'$path' = "'$version'"' "$version_dir/version.yml"
+    yq -i '.'$path' = "'$version'"' "$version_file"
     return 0
   fi
 }
@@ -103,8 +112,8 @@ union() {
 set -e
 base_dir=$(cd "$(dirname "$0")" &>/dev/null && pwd)
 source "$base_dir/methods.sh"
-export -f github_tag github_sha alpine_pkg
-version_dir=$(realpath -m "$base_dir/../version")
+export -f regex_match github_tag github_sha alpine_pkg
+version_file=${VERSION_FILE:-$(realpath -m "$base_dir/../version")}
 if [[ $# -eq 0 ]]; then
   find "$base_dir" -mindepth 1 -maxdepth 1 -type d ! -name ".git*" | while read -r dir; do
     build "$dir" 2>&1 | sed "s#^#[$(basename $dir)] => #"

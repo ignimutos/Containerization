@@ -5,11 +5,21 @@ if [[ -n $GITHUB_TOKEN ]]; then
 fi
 
 github_tag() {
-  if [[ -z $1 ]]; then
+  local repo=$1
+  local regex=$2
+  if [[ -z $repo ]]; then
     echo "Error: param not present"
     return 1
   fi
-  curl -s ${github_opts[@]} "https://api.github.com/repos/$1/tags?per_page=1&page=1" | jq -r '.[0].name' | sed 's/^v//'
+  local tag=$(curl -s ${github_opts[@]} "https://api.github.com/repos/$repo/releases/latest" | jq -r '.tag_name' | sed 's/^v//')
+  if [[ -n "$regex" ]]; then
+    tag=$(echo "$tag" | perl -ne "if (/$regex/) { print \$1 // \$& }")
+    if [[ -z $tag ]]; then
+      echo "Error: Tag '$tag' does not match regex '$regex'" >&2
+      return 1
+    fi
+  fi
+  echo $tag
 }
 
 github_sha() {
