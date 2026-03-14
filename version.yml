@@ -9,4 +9,4 @@ caddy-rr: 2.11.2-ace12ff084b00d5b183b16ad5ade8750d0eff7b0015e5668e7ac463b384a968
 microclaw-browser: 0.1.11-0.19.0
 caddy-caddy-base: 2.11.2-ace12ff084b00d5b183b16ad5ade8750d0eff7b0015e5668e7ac463b384a968c
 microclaw-python: 0.1.11
-microclaw-builtin: 0.1.11-9386a83b8a608624e5ee12d82b009622ba05b8c51b4ad44502db6b482d6db1f6
+microclaw-builtin: 0.1.12-e770643f44976f2df9b820829c2bde998d58f186df1006638d60acaf5dd15d6b
