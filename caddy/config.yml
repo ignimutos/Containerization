@@ -1,0 +1,10 @@
+version: |
+  github_tag caddyserver/caddy
+targets:
+  - target: caddy-base
+    sha: |
+      github_sha caddy-dns/cloudflare caddyserver/transform-encoder greenpau/caddy-security greenpau/caddy-trace
+  - target: caddy-rr
+    name: rr
+    sha: |
+      github_sha caddy-dns/cloudflare caddyserver/transform-encoder greenpau/caddy-security greenpau/caddy-trace caddyserver/replace-response

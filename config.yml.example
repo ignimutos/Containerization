@@ -1,0 +1,8 @@
+version: |
+  github_tag caddyserver/caddy
+targets:
+  - sha: |
+      github_sha caddy-dns/cloudflare
+  - name: rr
+    sha: |
+      github_sha caddy-dns/cloudflare caddyserver/transform-encoder

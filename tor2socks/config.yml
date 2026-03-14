@@ -1,0 +1,6 @@
+version: regex_match "https://pkgs.alpinelinux.org/package/edge/community/x86_64/tor" "<strong>(.*)<\/strong>"
+targets:
+  - name: base
+  - name: obfs
+    sha: |
+      regex_match "https://pkgs.alpinelinux.org/package/edge/community/x86_64/lyrebird" "<strong>(.*)<\/strong>"

@@ -1,0 +1,6 @@
+version: github_tag microclaw/microclaw
+targets:
+  - target: base
+  - target: builtin
+    sha: |
+      github_sha vercel-labs/agent-browser D4Vinci/Scrapling
