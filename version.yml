@@ -4,7 +4,7 @@ tor2socks: 0.4.9.5-r0
 tor2socks-obfs: 0.4.9.5-r0-0.8.1-r3
 naive-client: 143.0.7499.109-2
 naive-server: 2.11.2-5ef6e334ff6cb6e7b0c3c02b8ddd062f78838c48e3a7a0f6c4d6f6edf18273a9
-microclaw: 0.1.12
+microclaw: 0.1.16
 caddy-rr: 2.11.2-ace12ff084b00d5b183b16ad5ade8750d0eff7b0015e5668e7ac463b384a968c
 caddy-caddy-base: 2.11.2-ace12ff084b00d5b183b16ad5ade8750d0eff7b0015e5668e7ac463b384a968c
-microclaw-builtin: 0.1.12-e770643f44976f2df9b820829c2bde998d58f186df1006638d60acaf5dd15d6b
+microclaw-builtin: 0.1.16-0406d090d71cde941f53c2a951a3ae61b4b4512ff4d2cd5b1759b09edc88a696
