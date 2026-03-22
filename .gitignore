@@ -1,3 +1,4 @@
 /.env
 /test.sh
 version.yml
+.vscode/config.fish
