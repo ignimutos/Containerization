@@ -1,11 +1,16 @@
-nezha-agent: 2.0.2
-caddy: 2.11.2-d8d58bc0fb18819007053654d5a98f5a2b2968bab5d32c8ee8b5cf06550a8cd8
-tor2socks: 0.4.9.6-r0
-tor2socks-obfs: 0.4.9.6-r0-0.8.1-r4
-naive-client: 147.0.7727.49-1
-naive-server: 2.11.2-5ef6e334ff6cb6e7b0c3c02b8ddd062f78838c48e3a7a0f6c4d6f6edf18273a9
-microclaw: 0.1.18
-caddy-rr: 2.11.2-28839daa222829b38383b008e9f958633bc7fbcaadc55ce9121c78614430edef
-caddy-caddy-base: 2.11.2-6b7eeeb9cd2a768a9a7c4f0e3fc2fcd5775286d197a39164c62de114a5471810
-microclaw-builtin: 0.1.18-9b0a4cd33b2aca496f1ab76984a87e880111ccf0231214f8b282e6713f51d5dc
-tg-signer: 0.8.5
+caddy:
+  default:
+    version: 2.11.2
+    components:
+      caddy-dns/cloudflare: a8737d095ad5a48ca031cea6ab704057dbc2d250
+      caddyserver/transform-encoder: 3a808ce84ca01d374c5addacbd22f8b4ac7ca048
+      greenpau/caddy-security: fb799584502f8ca7c2a6b422049afeef1f5b038b
+      greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
+  rr:
+    version: 2.11.2
+    components:
+      caddy-dns/cloudflare: a8737d095ad5a48ca031cea6ab704057dbc2d250
+      caddyserver/transform-encoder: 3a808ce84ca01d374c5addacbd22f8b4ac7ca048
+      greenpau/caddy-security: fb799584502f8ca7c2a6b422049afeef1f5b038b
+      greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
+      caddyserver/replace-response: 80962887e4c680abfd1b11ce1403fa8cc0fdd3d6
