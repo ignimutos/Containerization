@@ -4,14 +4,14 @@ caddy:
     components:
       caddy-dns/cloudflare: a8737d095ad5a48ca031cea6ab704057dbc2d250
       caddyserver/transform-encoder: ba4124974830222da7f12a091cf11ddf4d49363f
-      greenpau/caddy-security: 0afb1ebff6eb15460ff76961cf6d99d7734b8dc2
+      greenpau/caddy-security: e03784fa058152e464dcdd2fd1396f43a0b56e7d
       greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
   rr:
     version: 2.11.2
     components:
       caddy-dns/cloudflare: a8737d095ad5a48ca031cea6ab704057dbc2d250
       caddyserver/transform-encoder: ba4124974830222da7f12a091cf11ddf4d49363f
-      greenpau/caddy-security: 0afb1ebff6eb15460ff76961cf6d99d7734b8dc2
+      greenpau/caddy-security: e03784fa058152e464dcdd2fd1396f43a0b56e7d
       greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
       caddyserver/replace-response: 80962887e4c680abfd1b11ce1403fa8cc0fdd3d6
 naive-client:
