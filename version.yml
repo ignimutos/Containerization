@@ -16,7 +16,7 @@ caddy:
       caddyserver/replace-response: 80962887e4c680abfd1b11ce1403fa8cc0fdd3d6
 naive-client:
   default:
-    version: 148.0.7778.96-2
+    version: 148.0.7778.96-5
     components: {}
 naive-server:
   default:
