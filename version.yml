@@ -37,7 +37,7 @@ naive-server:
       klzgrad/forwardproxy: d62c80d3dd2c706b6b87579844d2397bddd18317
 nezha-agent:
   default:
-    version: 2.1.0
+    version: 2.1.1
     components: {}
 tg-signer:
   default:
@@ -45,9 +45,9 @@ tg-signer:
     components: {}
 tor2socks:
   default:
-    version: 0.4.9.8-r0
+    version: 0.4.9.9-r0
     components: {}
   obfs:
-    version: 0.4.9.8-r0
+    version: 0.4.9.9-r0
     components:
       alpine_pkg:package=lyrebird|branch=edge|repository=community: 0.8.1-r5
