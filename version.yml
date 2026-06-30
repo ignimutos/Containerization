@@ -4,7 +4,7 @@ caddy:
     components:
       caddy-dns/cloudflare: a8737d095ad5a48ca031cea6ab704057dbc2d250
       caddyserver/transform-encoder: ba4124974830222da7f12a091cf11ddf4d49363f
-      greenpau/caddy-security: 5cccf6a72ffae1192dd1a86d0480db7536ffa1ab
+      greenpau/caddy-security: b96087fc696ada2ed80f4ca81e031878a47d43ac
       greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
       mholt/caddy-l4: 1d459d3c0a3232499a5f2b6122c4e90786d93a11
       caddyserver/replace-response: 80962887e4c680abfd1b11ce1403fa8cc0fdd3d6
@@ -21,7 +21,7 @@ caddy:
     components:
       caddy-dns/cloudflare: a8737d095ad5a48ca031cea6ab704057dbc2d250
       caddyserver/transform-encoder: ba4124974830222da7f12a091cf11ddf4d49363f
-      greenpau/caddy-security: 5cccf6a72ffae1192dd1a86d0480db7536ffa1ab
+      greenpau/caddy-security: b96087fc696ada2ed80f4ca81e031878a47d43ac
       greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
       mholt/caddy-l4: 1d459d3c0a3232499a5f2b6122c4e90786d93a11
       caddyserver/replace-response: 80962887e4c680abfd1b11ce1403fa8cc0fdd3d6
@@ -45,9 +45,9 @@ tg-signer:
     components: {}
 tor2socks:
   default:
-    version: 0.4.9.10-r0
+    version: 0.4.9.11-r0
     components: {}
   obfs:
-    version: 0.4.9.10-r0
+    version: 0.4.9.11-r0
     components:
       alpine_pkg:package=lyrebird|branch=edge|repository=community: 0.8.1-r5
