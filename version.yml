@@ -6,7 +6,7 @@ caddy:
       caddyserver/transform-encoder: ba4124974830222da7f12a091cf11ddf4d49363f
       greenpau/caddy-security: b96087fc696ada2ed80f4ca81e031878a47d43ac
       greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
-      mholt/caddy-l4: 678da1df1111db1f2017fccd9789930fdc2b1394
+      mholt/caddy-l4: b05290359655ef32417cba4f22389f99d7735b15
       caddyserver/replace-response: 80962887e4c680abfd1b11ce1403fa8cc0fdd3d6
   rr:
     version: 2.11.2
@@ -23,9 +23,9 @@ caddy:
       caddyserver/transform-encoder: ba4124974830222da7f12a091cf11ddf4d49363f
       greenpau/caddy-security: b96087fc696ada2ed80f4ca81e031878a47d43ac
       greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
-      mholt/caddy-l4: 678da1df1111db1f2017fccd9789930fdc2b1394
+      mholt/caddy-l4: b05290359655ef32417cba4f22389f99d7735b15
       caddyserver/replace-response: 80962887e4c680abfd1b11ce1403fa8cc0fdd3d6
-      klzgrad/naiveproxy: b886ad68121c3f4e9a4e9080f9051d4ff82861c3
+      klzgrad/naiveproxy: 3ba967e2d36cc133a896e81a36257ad4c6ea20f4
 naive-client:
   default:
     version: 149.0.7827.114-1
