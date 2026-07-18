@@ -50,4 +50,4 @@ tor2socks:
   obfs:
     version: 0.4.9.11-r0
     components:
-      alpine_pkg:package=lyrebird|branch=edge|repository=community: 0.8.1-r5
+      alpine_pkg:package=lyrebird|branch=edge|repository=community: 0.8.1-r6
