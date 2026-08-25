@@ -41,7 +41,7 @@ nezha-agent:
     components: {}
 tg-signer:
   default:
-    version: 0.8.6
+    version: 0.9.0
     components: {}
 tor2socks:
   default:
