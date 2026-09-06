@@ -25,7 +25,7 @@ caddy:
       greenpau/caddy-trace: b849748ae8ff2e3a1c2c92b382cdc73f3d94dca0
       mholt/caddy-l4: 42db5690dea199f930a6f08005fe2e4aab10dcc9
       caddyserver/replace-response: 80962887e4c680abfd1b11ce1403fa8cc0fdd3d6
-      klzgrad/naiveproxy: 3ba967e2d36cc133a896e81a36257ad4c6ea20f4
+      klzgrad/naiveproxy: 769aaa53c39190fbfd6cfb223f17bb9f9cf9d3e6
 naive-client:
   default:
     version: 150.0.7871.63-1
