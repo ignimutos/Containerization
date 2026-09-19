@@ -294,7 +294,13 @@ def test_resolve_target_builds_prefers_personal_access_token_env(
         def resolve_github_sha(self, repos: list[str]) -> str:
             pytest.fail("unexpected github sha digest resolution")
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             pytest.fail("unexpected github tag resolution")
 
         def resolve_alpine_pkg(
@@ -344,7 +350,13 @@ def test_resolve_target_builds_uses_github_token_when_pat_missing(
         def resolve_github_sha(self, repos: list[str]) -> str:
             pytest.fail("unexpected github sha digest resolution")
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             pytest.fail("unexpected github tag resolution")
 
         def resolve_alpine_pkg(
@@ -418,7 +430,13 @@ targets:
         def resolve_github_sha(self, repos: list[str]) -> str:
             pytest.fail("unexpected github sha digest resolution")
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             assert repo == "owner/repo"
             assert regex == r"^v?(\d+\.\d+\.\d+)$"
             return "2.4.6"
@@ -562,7 +580,13 @@ targets:
         def resolve_github_sha(self, repos: list[str]) -> str:
             pytest.fail("unexpected github sha digest resolution")
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             pytest.fail("unexpected github tag resolution")
 
         def resolve_alpine_pkg(
@@ -651,7 +675,13 @@ targets:
         def resolve_github_sha(self, repos: list[str]) -> str:
             pytest.fail("unexpected github sha digest resolution")
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             pytest.fail("unexpected github tag resolution")
 
         def resolve_alpine_pkg(
@@ -1491,10 +1521,18 @@ targets:
             self.token = token
             self.transport = transport
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             assert repo == "upstream/telegram"
             assert regex is None
-            return "v1.2.3"
+            if raw_out is not None:
+                raw_out["github_tag"] = "v1.2.3"
+            return "1.2.3"
 
         def resolve_github_sha_details(self, repos: list[str]) -> dict[str, str]:
             assert repos == ["upstream/telegram"]
@@ -1562,12 +1600,14 @@ targets:
         "resolver": "github_tag",
         "kind": "resolver",
         "repo": "upstream/telegram",
+        "raw_tag": "v1.2.3",
     }
     assert entry.component_sources == {
         "upstream/telegram": {
             "resolver": "github_sha",
             "kind": "resolver",
             "repos": ["upstream/telegram"],
+            "repo": "upstream/telegram",
         }
     }
 

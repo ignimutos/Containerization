@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -94,8 +95,13 @@ def resolve_target_builds(
     builds: list[BuildPlan] = []
     for name in selected:
         loaded = configs_by_name[name]
+        image_raw: dict[str, str] = {}
         try:
-            image_version = resolve_value(resolver, loaded.config.version)
+            image_version = resolve_value(
+                resolver,
+                loaded.config.version,
+                raw_out=image_raw,
+            )
         except ResolverUserError as exc:
             raise _wrap_resolver_error(exc, image_name=name, target_name=None) from exc
         targets = loaded.config.targets or [TargetConfig()]
@@ -104,11 +110,21 @@ def resolve_target_builds(
             if selected_entries is not None and entry_key not in selected_entries:
                 continue
             version_spec = target.version if target.version is not None else loaded.config.version
+            version_raw: dict[str, str] = {}
+            components_raw: dict[str, str] = {}
             try:
-                version = resolve_value(resolver, target.version) or image_version
-                components = resolve_components(resolver, target.sha)
+                version = (
+                    resolve_value(resolver, target.version, raw_out=version_raw)
+                    or image_version
+                )
+                components = resolve_components(
+                    resolver,
+                    target.sha,
+                    raw_out=components_raw,
+                )
             except ResolverUserError as exc:
                 raise _wrap_resolver_error(exc, image_name=name, target_name=target.name) from exc
+            version_raw_source = version_raw if target.version is not None else image_raw
             resolved_target = ResolvedTargetState(
                 image_name=loaded.repo_name,
                 target_name=target.name,
@@ -124,18 +140,31 @@ def resolve_target_builds(
                     target=resolved_target,
                     build_target=target.target,
                     directory_name=name,
-                    version_source=_source_metadata(version_spec),
-                    component_sources=_component_sources_metadata(target.sha, components),
+                    version_source=_source_metadata(version_spec, raw=version_raw_source),
+                    component_sources=_component_sources_metadata(
+                        target.sha,
+                        components,
+                        raw=components_raw,
+                    ),
                 )
             )
     return builds
 
 
-def resolve_value(resolver: ResolverService, value: str | ResolverSpec | None) -> str | None:
+def resolve_value(
+    resolver: ResolverService,
+    value: str | ResolverSpec | None,
+    *,
+    raw_out: dict[str, str] | None = None,
+) -> str | None:
     if value is None or isinstance(value, str):
         return value
     if value.github_tag is not None:
-        return resolver.resolve_github_tag(value.github_tag.repo, value.github_tag.regex)
+        return resolver.resolve_github_tag(
+            value.github_tag.repo,
+            value.github_tag.regex,
+            raw_out=raw_out,
+        )
     if value.github_sha is not None:
         return resolver.resolve_github_sha(value.github_sha.repos)
     if value.alpine_pkg is not None:
@@ -161,6 +190,8 @@ def resolve_value(resolver: ResolverService, value: str | ResolverSpec | None) -
 def resolve_components(
     resolver: ResolverService,
     value: str | ResolverSpec | None,
+    *,
+    raw_out: dict[str, str] | None = None,
 ) -> dict[str, str]:
     if value is None:
         return {}
@@ -169,7 +200,7 @@ def resolve_components(
     if value.github_sha is not None:
         return resolver.resolve_github_sha_details(value.github_sha.repos)
 
-    resolved = resolve_value(resolver, value)
+    resolved = resolve_value(resolver, value, raw_out=raw_out)
     if resolved is None:
         return {}
     return {_component_key(value): resolved}
@@ -213,7 +244,11 @@ def _literal_source_metadata(value: str) -> dict[str, Any]:
     return source
 
 
-def _source_metadata(value: str | ResolverSpec | None) -> dict[str, Any]:
+def _source_metadata(
+    value: str | ResolverSpec | None,
+    *,
+    raw: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     if value is None:
         return {}
     if isinstance(value, str):
@@ -226,6 +261,9 @@ def _source_metadata(value: str | ResolverSpec | None) -> dict[str, Any]:
         }
         if value.github_tag.regex is not None:
             source["regex"] = value.github_tag.regex
+        raw_tag = (raw or {}).get("github_tag")
+        if isinstance(raw_tag, str) and raw_tag:
+            source["raw_tag"] = raw_tag
         return source
     if value.github_sha is not None:
         return {
@@ -264,6 +302,8 @@ def _source_metadata(value: str | ResolverSpec | None) -> dict[str, Any]:
 def _component_sources_metadata(
     value: str | ResolverSpec | None,
     resolved_components: dict[str, str],
+    *,
+    raw: Mapping[str, str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     if value is None:
         return {}
@@ -275,11 +315,11 @@ def _component_sources_metadata(
     if value.github_sha is not None:
         source = _source_metadata(value)
         return {
-            name: dict(source)
+            name: {**source, "repo": name}
             for name in resolved_components
         }
 
-    source = _source_metadata(value)
+    source = _source_metadata(value, raw=raw)
     key = _component_key(value)
     if key in resolved_components:
         return {key: source}

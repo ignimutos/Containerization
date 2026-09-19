@@ -190,7 +190,13 @@ class ResolverService:
         self._token = token
         self._client = httpx.Client(transport=transport, follow_redirects=True)
 
-    def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+    def resolve_github_tag(
+        self,
+        repo: str,
+        regex: str | None = None,
+        *,
+        raw_out: dict[str, str] | None = None,
+    ) -> str:
         if not repo:
             raise ValueError("repo must not be empty")
 
@@ -199,6 +205,9 @@ class ResolverService:
             tag = self._resolve_github_tag_with_auth(repo, use_token=False)
         if tag is None:
             raise ValueError(f"Unable to resolve latest tag for '{repo}'")
+
+        if raw_out is not None and tag:
+            raw_out["github_tag"] = tag
 
         tag = tag.removeprefix("v")
         if regex:

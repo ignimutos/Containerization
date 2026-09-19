@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
@@ -165,7 +166,7 @@ class SummaryValue:
 @dataclass(slots=True)
 class SummaryDetailRow:
     component_name: str
-    readable_name: str
+    label: str
     source_link: str | None
     old_value: SummaryValue
     new_value: SummaryValue
@@ -210,11 +211,13 @@ def build_summary_model(report: BuildReport) -> SummaryModel:
             entry.old_state.version,
             source=entry.version_source,
             source_link=version_source_link,
+            raw_value=entry.new_state.version,
         )
         new_version = _value_with_links(
             entry.new_state.version,
             source=entry.version_source,
             source_link=version_source_link,
+            raw_value=entry.new_state.version,
         )
 
         detail_rows = _build_changed_detail_rows(entry)
@@ -254,13 +257,23 @@ def _build_changed_detail_rows(entry: BuildReportEntry) -> list[SummaryDetailRow
         detail_rows.append(
             SummaryDetailRow(
                 component_name=component_name,
-                readable_name=_source_readable_name(source),
+                label=_component_label(source, component_name),
                 source_link=source_link,
-                old_value=_value_with_links(old_raw, source=source, source_link=source_link),
-                new_value=_value_with_links(new_raw, source=source, source_link=source_link),
+                old_value=_value_with_links(
+                    old_raw,
+                    source=source,
+                    source_link=source_link,
+                    raw_value=new_raw,
+                ),
+                new_value=_value_with_links(
+                    new_raw,
+                    source=source,
+                    source_link=source_link,
+                    raw_value=new_raw,
+                ),
             )
         )
-    detail_rows.sort(key=lambda row: (row.readable_name, row.component_name))
+    detail_rows.sort(key=lambda row: (row.label, row.component_name))
     return detail_rows
 
 
@@ -281,8 +294,7 @@ def render_summary_markdown(model: SummaryModel) -> str:
             lines.append("<summary>组件变动明细 / Component Changes</summary>")
             lines.append("")
             for row in entry.detail_rows:
-                label = _detail_label(row)
-                name = _markdown_link_or_text(label, row.source_link)
+                name = _markdown_link_or_text(row.label, row.source_link)
                 lines.append(
                     f"- {name}: {_markdown_value(row.old_value)} -> {_markdown_value(row.new_value)}"
                 )
@@ -314,8 +326,7 @@ def render_summary_telegram_html(model: SummaryModel) -> str:
         if entry.detail_rows:
             lines.append("组件变动明细 / Component Changes:")
             for row in entry.detail_rows:
-                label = _detail_label(row)
-                name = _html_link_or_text(label, row.source_link)
+                name = _html_link_or_text(row.label, row.source_link)
                 lines.append(
                     "  "
                     f"{name}: {_html_value(row.old_value)} -&gt; {_html_value(row.new_value)}"
@@ -457,6 +468,15 @@ def _as_int(value: Any) -> int | None:
     return None
 
 
+def _component_label(source: Mapping[str, Any], component_name: str) -> str:
+    resolver = str(source.get("resolver", "")).strip()
+    if resolver in {"github_sha", "github_tag"}:
+        repo = _github_repo(source)
+        if repo is not None:
+            return repo
+    return f"{_source_readable_name(source)} [{component_name}]"
+
+
 def _source_readable_name(source: Mapping[str, Any]) -> str:
     resolver = str(source.get("resolver", "")).strip()
     names = {
@@ -475,22 +495,29 @@ def _value_with_links(
     *,
     source: Mapping[str, Any],
     source_link: str | None,
+    raw_value: str | None = None,
 ) -> SummaryValue:
     if value in (None, ""):
         return SummaryValue(text="N/A", link=source_link)
 
     text = _short_hex(value)
-    value_link = _resolver_value_link(source, value)
+    value_link = _resolver_value_link(source, value, raw_value=raw_value)
     return SummaryValue(text=text, link=value_link or source_link)
 
 
-def _resolver_value_link(source: Mapping[str, Any], value: str) -> str | None:
+def _resolver_value_link(
+    source: Mapping[str, Any],
+    value: str,
+    *,
+    raw_value: str | None = None,
+) -> str | None:
     resolver = str(source.get("resolver", "")).strip()
     if resolver == "github_tag":
         repo = _github_repo(source)
         if repo is None:
             return None
-        return _safe_https_url(f"https://github.com/{repo}/releases/tag/{value}")
+        tag = _github_tag_value_for_link(source, value, raw_value)
+        return _safe_https_url(f"https://github.com/{repo}/releases/tag/{tag}")
     if resolver == "github_sha":
         repo = _github_repo(source)
         if repo is None:
@@ -505,6 +532,32 @@ def _resolver_value_link(source: Mapping[str, Any], value: str) -> str | None:
     if resolver == "literal":
         return _safe_https_url(str(source.get("url", "")))
     return None
+
+
+_TAG_WRAPPER_PATTERN = re.compile(r"^[A-Za-z._-]*$")
+
+
+def _github_tag_value_for_link(
+    source: Mapping[str, Any],
+    value: str,
+    raw_value: str | None,
+) -> str:
+    raw_tag = source.get("raw_tag")
+    if not isinstance(raw_tag, str) or not raw_tag:
+        return value
+    if not raw_value:
+        return value
+    if value == raw_value:
+        return raw_tag
+    if raw_tag.endswith(raw_value):
+        prefix, suffix = raw_tag[: len(raw_tag) - len(raw_value)], ""
+    elif raw_tag.startswith(raw_value):
+        prefix, suffix = "", raw_tag[len(raw_value):]
+    else:
+        return value
+    if not (_TAG_WRAPPER_PATTERN.match(prefix) and _TAG_WRAPPER_PATTERN.match(suffix)):
+        return value
+    return f"{prefix}{value}{suffix}"
 
 
 def _source_link(source: Mapping[str, Any]) -> str | None:
@@ -601,10 +654,6 @@ def _html_link_or_text(text: str, link: str | None) -> str:
 
 def _safe_markdown_url(value: str) -> str:
     return value.replace(" ", "%20").replace(")", "%29")
-
-
-def _detail_label(row: SummaryDetailRow) -> str:
-    return f"{row.readable_name} [{row.component_name}]"
 
 
 def _safe_markdown(value: str) -> str:

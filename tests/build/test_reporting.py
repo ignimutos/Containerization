@@ -504,10 +504,10 @@ def test_summary_renderers_show_main_version_once_and_sort_source_rows() -> None
     assert "same-as-main" not in markdown
 
     assert "Alpine package \\[pkg\\]" in markdown
-    assert "GitHub commit \\[sha\\]" in markdown
+    assert "- [upstream/telegram]" in markdown
 
     alpine_index = markdown.index("Alpine package \\[pkg\\]")
-    github_index = markdown.index("GitHub commit \\[sha\\]")
+    github_index = markdown.index("- [upstream/telegram]")
     assert alpine_index < github_index
 
 
@@ -812,3 +812,141 @@ def test_format_telegram_summary_uses_shared_telegram_renderer() -> None:
     assert format_telegram_summary(report) == render_summary_telegram_html(
         build_summary_model(report)
     )
+
+
+def test_summary_renderers_link_each_component_to_its_own_repo() -> None:
+    report = BuildReport(
+        entries=[
+            BuildReportEntry(
+                image_key="caddy",
+                image_name="caddy",
+                target_name=None,
+                old_state=BuildReportState(
+                    version="2.0.0",
+                    components={
+                        "caddy-dns/cloudflare": "aaa1111",
+                        "mholt/caddy-l4": "bbb2222",
+                    },
+                ),
+                new_state=BuildReportState(
+                    version="2.1.0",
+                    components={
+                        "caddy-dns/cloudflare": "ccc3333",
+                        "mholt/caddy-l4": "ddd4444",
+                    },
+                ),
+                version_source={
+                    "resolver": "docker_hub_tag",
+                    "namespace": "library",
+                    "repository": "caddy",
+                },
+                component_sources={
+                    "caddy-dns/cloudflare": {
+                        "resolver": "github_sha",
+                        "repos": ["caddy-dns/cloudflare", "mholt/caddy-l4"],
+                        "repo": "caddy-dns/cloudflare",
+                    },
+                    "mholt/caddy-l4": {
+                        "resolver": "github_sha",
+                        "repos": ["caddy-dns/cloudflare", "mholt/caddy-l4"],
+                        "repo": "mholt/caddy-l4",
+                    },
+                },
+            )
+        ]
+    )
+
+    model = build_summary_model(report)
+    markdown = render_summary_markdown(model)
+    html = render_summary_telegram_html(model)
+
+    assert "[caddy-dns/cloudflare](https://github.com/caddy-dns/cloudflare): " in markdown
+    assert "[mholt/caddy-l4](https://github.com/mholt/caddy-l4): " in markdown
+    assert "[ccc3333](https://github.com/caddy-dns/cloudflare/commit/ccc3333)" in markdown
+    assert "[ddd4444](https://github.com/mholt/caddy-l4/commit/ddd4444)" in markdown
+
+    assert '<a href="https://github.com/caddy-dns/cloudflare">caddy-dns/cloudflare</a>' in html
+    assert '<a href="https://github.com/mholt/caddy-l4">mholt/caddy-l4</a>' in html
+    assert 'href="https://github.com/caddy-dns/cloudflare/commit/ccc3333"' in html
+    assert 'href="https://github.com/mholt/caddy-l4/commit/ddd4444"' in html
+    assert "caddy-dns/cloudflare/commit/ddd4444" not in html
+
+
+def test_summary_renderers_use_raw_tag_for_github_tag_value_links() -> None:
+    report = BuildReport(
+        entries=[
+            BuildReportEntry(
+                image_key="nezha-agent",
+                image_name="nezha-agent",
+                target_name=None,
+                old_state=BuildReportState(version="2.3.4"),
+                new_state=BuildReportState(version="2.3.5"),
+                version_source={
+                    "resolver": "github_tag",
+                    "repo": "nezhahq/agent",
+                    "raw_tag": "v2.3.5",
+                },
+                component_sources={},
+            )
+        ]
+    )
+
+    model = build_summary_model(report)
+    markdown = render_summary_markdown(model)
+    html = render_summary_telegram_html(model)
+
+    assert "[2.3.4](https://github.com/nezhahq/agent/releases/tag/v2.3.4)" in markdown
+    assert "[2.3.5](https://github.com/nezhahq/agent/releases/tag/v2.3.5)" in markdown
+    assert 'href="https://github.com/nezhahq/agent/releases/tag/v2.3.5"' in html
+
+
+def test_summary_renderers_apply_raw_tag_wrapper_to_previous_value() -> None:
+    report = BuildReport(
+        entries=[
+            BuildReportEntry(
+                image_key="telegram",
+                image_name="telegram",
+                target_name="release",
+                old_state=BuildReportState(version="2.3.4"),
+                new_state=BuildReportState(version="2.3.5"),
+                version_source={
+                    "resolver": "github_tag",
+                    "repo": "upstream/telegram",
+                    "raw_tag": "release-2.3.5",
+                },
+                component_sources={},
+            )
+        ]
+    )
+
+    markdown = render_summary_markdown(build_summary_model(report))
+
+    assert "[2.3.4](https://github.com/upstream/telegram/releases/tag/release-2.3.4)" in markdown
+    assert "[2.3.5](https://github.com/upstream/telegram/releases/tag/release-2.3.5)" in markdown
+
+
+def test_summary_renderers_drop_unsafe_raw_tag_links() -> None:
+    report = BuildReport(
+        entries=[
+            BuildReportEntry(
+                image_key="telegram",
+                image_name="telegram",
+                target_name="release",
+                old_state=BuildReportState(version="1.0.0"),
+                new_state=BuildReportState(version="1.1.0"),
+                version_source={
+                    "resolver": "github_tag",
+                    "repo": "upstream/telegram",
+                    "raw_tag": 'v1.1.0" onclick="x',
+                },
+                component_sources={},
+            )
+        ]
+    )
+
+    model = build_summary_model(report)
+    html = render_summary_telegram_html(model)
+
+    assert "1.1.0" in html
+    assert "onclick" not in html
+    assert 'v1.1.0"' not in html

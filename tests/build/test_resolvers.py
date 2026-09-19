@@ -35,6 +35,38 @@ def test_resolve_github_tag_falls_back_to_unauthenticated_request_for_invalid_to
     ]
 
 
+def test_resolve_github_tag_records_raw_upstream_tag_before_stripping_v() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/releases/latest"):
+            return httpx.Response(200, json={"tag_name": "v2.0.1"})
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    service = ResolverService(transport=httpx.MockTransport(handler))
+
+    raw: dict[str, str] = {}
+    tag = service.resolve_github_tag("owner/repo", raw_out=raw)
+
+    assert tag == "2.0.1"
+    assert raw == {"github_tag": "v2.0.1"}
+
+
+def test_resolve_github_tag_records_raw_upstream_tag_from_tags_fallback() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/releases/latest"):
+            return httpx.Response(404, json={"message": "Not Found"})
+        if request.url.path.endswith("/tags"):
+            return httpx.Response(200, json=[{"name": "release-2.0.1"}])
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    service = ResolverService(transport=httpx.MockTransport(handler))
+
+    raw: dict[str, str] = {}
+    tag = service.resolve_github_tag("owner/repo", regex=r"^release-(.+)$", raw_out=raw)
+
+    assert tag == "2.0.1"
+    assert raw == {"github_tag": "release-2.0.1"}
+
+
 def test_resolve_github_tag_does_not_fall_back_to_unauthenticated_request_for_tls_error() -> None:
     requests: list[httpx.Request] = []
     transport_error = httpx.ConnectError(
@@ -301,7 +333,13 @@ targets:
         def resolve_github_sha(self, repos: list[str]) -> str:
             pytest.fail("structured resolver path should be primary")
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             pytest.fail("unexpected github tag resolution")
 
         def resolve_alpine_pkg(
@@ -349,15 +387,86 @@ targets:
                     "resolver": "github_sha",
                     "kind": "resolver",
                     "repos": ["caddy-dns/cloudflare", "caddyserver/replace-response"],
+                    "repo": "caddy-dns/cloudflare",
                 },
                 "caddyserver/replace-response": {
                     "resolver": "github_sha",
                     "kind": "resolver",
                     "repos": ["caddy-dns/cloudflare", "caddyserver/replace-response"],
+                    "repo": "caddyserver/replace-response",
                 },
             },
         )
     ]
+
+
+def test_resolve_target_builds_records_raw_github_tag_in_version_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    image_dir = tmp_path / "images" / "nezha-agent"
+    image_dir.mkdir(parents=True)
+    (image_dir / "config.yml").write_text(
+        """
+image_name: nezha-agent
+version:
+  github_tag:
+    repo: nezhahq/agent
+targets:
+  - {}
+""".strip()
+        + "\n"
+    )
+
+    class FakeResolverService:
+        def __init__(self, *, token: str | None = None, transport: object | None = None) -> None:
+            self.token = token
+            self.transport = transport
+
+        def resolve_github_sha_details(self, repos: list[str]) -> dict[str, str]:
+            pytest.fail("unexpected github sha resolution")
+
+        def resolve_github_sha(self, repos: list[str]) -> str:
+            pytest.fail("unexpected github sha digest resolution")
+
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
+            assert repo == "nezhahq/agent"
+            if raw_out is not None:
+                raw_out["github_tag"] = "v2.3.5"
+            return "2.3.5"
+
+        def resolve_alpine_pkg(
+            self,
+            target: str,
+            branch: str = "v3.21",
+            repository: str = "main",
+        ) -> str:
+            pytest.fail("unexpected alpine package resolution")
+
+        def resolve_regex_match(self, url: str, pattern: str) -> str:
+            pytest.fail("unexpected regex resolution")
+
+    monkeypatch.setattr("tooling.build.cli.ResolverService", FakeResolverService)
+
+    builds = resolve_target_builds(
+        repo_root=tmp_path,
+        requested_targets=["nezha-agent"],
+        force=True,
+        state_file=None,
+    )
+
+    assert builds[0].version_source == {
+        "resolver": "github_tag",
+        "kind": "resolver",
+        "repo": "nezhahq/agent",
+        "raw_tag": "v2.3.5",
+    }
 
 
 def test_resolve_target_builds_wraps_image_level_resolver_error_with_default_target(
@@ -381,7 +490,13 @@ targets:
         def __init__(self, *, token: str | None = None, transport: object | None = None) -> None:
             pass
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             raise ResolverUserError(
                 reason_code="github_tls_error",
                 message="GitHub tag lookup failed for owner/repo: TLS connection failed",
@@ -444,7 +559,13 @@ targets:
         def __init__(self, *, token: str | None = None, transport: object | None = None) -> None:
             pass
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             raise ResolverUserError(
                 reason_code="github_tls_error",
                 message="GitHub tag lookup failed for owner/repo: TLS connection failed",
@@ -508,7 +629,13 @@ targets:
         def __init__(self, *, token: str | None = None, transport: object | None = None) -> None:
             pass
 
-        def resolve_github_tag(self, repo: str, regex: str | None = None) -> str:
+        def resolve_github_tag(
+            self,
+            repo: str,
+            regex: str | None = None,
+            *,
+            raw_out: dict[str, str] | None = None,
+        ) -> str:
             pytest.fail("unexpected github tag resolution")
 
         def resolve_github_sha(self, repos: list[str]) -> str:
