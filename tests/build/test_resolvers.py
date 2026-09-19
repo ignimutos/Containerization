@@ -396,6 +396,8 @@ targets:
                     "repo": "caddyserver/replace-response",
                 },
             },
+            template=None,
+            repos=["caddy-dns/cloudflare", "caddyserver/replace-response"],
         )
     ]
 

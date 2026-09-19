@@ -150,6 +150,7 @@ targets:
             "version": "1.2.3",
             "components": {},
             "dockerfile": "Dockerfile.base",
+            "template": None,
             "build_target": None,
         },
         {
@@ -160,6 +161,7 @@ targets:
             "version": "2.0.0",
             "components": {},
             "dockerfile": "Dockerfile.release",
+            "template": None,
             "build_target": "runtime",
         },
     ]

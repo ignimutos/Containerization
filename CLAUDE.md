@@ -35,13 +35,16 @@ uv run python -m tooling.build build tg-signer --repo-root . --registry-user <re
 3. `resolvers.py` 解析 `github_tag` / `github_sha` / `alpine_pkg` / `regex_match`，见 `tooling/build/resolvers.py:19`、`tooling/build/resolvers.py:40`、`tooling/build/resolvers.py:65`、`tooling/build/resolvers.py:81`。
 4. `state.py` 用 `version.yml` 判定跳过 / 重建，见 `tooling/build/state.py:13`。
 5. `docker.py` 生成并执行 `docker build` / `docker buildx build`，见 `tooling/build/docker.py:25`、`tooling/build/docker.py:54`。
-6. CI 在 `.github/workflows/build.yml:23` 串起测试、选目标、推送、回写状态。
+6. `template.py` 用 Jinja2 渲染 `Dockerfile.j2`，见 `tooling/build/template.py:11`。
+7. CI 在 `.github/workflows/build.yml:23` 串起测试、选目标、推送、回写状态。
 
 ## 关键约束
 
 - `null` / 空字符串 / `None` 在命名拼接时忽略；`base` 不再是特殊值，影响 tag 和 state key。
 - 默认 target 直接用无 `name` 的 target 表达；`name: base` 非法。
 - `github_tag` 去前导 `v`；`github_sha` 把多个仓库最新 commit SHA 拼接后做 sha256，见 `tooling/build/resolvers.py:29`、`tooling/build/resolvers.py:62`。
+- 镜像目录有 `Dockerfile.j2` 就自动渲染，无需 `config.yml` 字段；`targets[].template` 可覆盖。渲染产物写临时目录后传给 `docker build -f`，不落仓库，见 `tooling/build/template.py`、`tooling/build/cli.py:161`。
+- 模板上下文 `repos` 即该 target 的 `sha.github_sha.repos`；repo 名与构建模块路径不一致的映射写在模板里，不在工具里特判。
 - 本地模式走 `docker build --load`；`--push` 才走 `docker buildx build --push`，见 `tooling/build/docker.py:36`。
 - `--platform` 只在 push/buildx 模式生效，见 `tooling/build/docker.py:44`。
 - 未显式传 `--state-file` 时，会尝试找 `../version/version.yml`；找不到则按无状态处理，见 `tooling/build/state.py:81`、`tooling/build/cli.py:125`。

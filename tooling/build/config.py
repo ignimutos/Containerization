@@ -90,6 +90,7 @@ def _load_target_config(raw_target: Any) -> TargetConfig:
         version=_load_resolver_field(raw_target, "version", "targets[].version"),
         sha=_load_resolver_field(raw_target, "sha", "targets[].sha"),
         dockerfile=dockerfile,
+        template=_load_string_field(raw_target, "template", "targets[].template"),
     )
 
 

@@ -60,6 +60,7 @@ class TargetConfig:
     version: str | ResolverSpec | None = None
     sha: str | ResolverSpec | None = None
     dockerfile: str = "Dockerfile"
+    template: str | None = None
 
 
 @dataclass(slots=True)

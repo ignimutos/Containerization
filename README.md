@@ -4,7 +4,7 @@ Auto-build Docker images for personal usage.
 
 ## 目录结构
 
-- `images/`：各镜像的构建上下文。每个镜像目录包含自己的 `Dockerfile`、`config.yml` 和附属脚本。
+- `images/`：各镜像的构建上下文。每个镜像目录包含自己的 `config.yml`、构建上下文文件和附属脚本；Dockerfile 可以是普通 `Dockerfile`，也可以是待渲染的 `Dockerfile.j2`（见下）。
 - `tooling/build/`：Python 构建工具。负责解析配置、解析上游版本、决定是否重建、组装 Docker 命令。
 - `tests/build/`：构建工具的本地测试。
 - `.github/workflows/build.yml`：CI 入口。先跑 Python 测试，再按改动范围选择目标镜像构建。
@@ -144,6 +144,19 @@ targets:
 ```
 
 默认 target 直接用无 `name` 的 target 表达；`base` 不再是特殊保留值。
+
+## Dockerfile 模板
+
+镜像目录里放 `Dockerfile.j2` 即自动启用模板渲染，不需要在 `config.yml` 写任何字段；也可以用 `targets[].template` 指定别的模板文件。
+
+模板渲染出的 Dockerfile 不会落进仓库，而是写到临时目录后传给 `docker build -f`，构建上下文保持干净。
+
+上下文变量：
+
+- `repos`：该 target 的 `sha.github_sha.repos` 原列表，用来渲染构建命令，避免在 `config.yml` 与 Dockerfile 里各写一遍。
+- `version`：该 target 解析出的版本。
+
+`repos` 里的 repo 名不一定等于构建工具期望的模块路径（例如 `klzgrad/naiveproxy` 实际要构建成 `github.com/caddyserver/forwardproxy=github.com/klzgrad/forwardproxy@naive`）。这种无法从 `config.yml` 推导的映射写在模板里，不要在工具里做特判。`images/caddy/Dockerfile.j2` 是可用示例。
 
 ## CI / version 分支
 

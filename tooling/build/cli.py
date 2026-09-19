@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
+import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,6 +39,7 @@ from .selection import (
 )
 from .state import BuildStateStore, resolve_state_file
 from .telegram import TelegramClient
+from .template import DEFAULT_TEMPLATE, render_template
 
 
 @dataclass(slots=True)
@@ -48,6 +51,8 @@ class BuildPlan:
     directory_name: str | None = None
     version_source: dict[str, Any] = field(default_factory=dict)
     component_sources: dict[str, dict[str, Any]] = field(default_factory=dict)
+    template: str | None = None
+    repos: list[str] = field(default_factory=list)
 
 
 def _display_target_name(target_name: str | None) -> str:
@@ -146,9 +151,40 @@ def resolve_target_builds(
                         components,
                         raw=components_raw,
                     ),
+                    template=_template_for(loaded.image_dir, target),
+                    repos=_target_repos(target.sha),
                 )
             )
     return builds
+
+
+def _template_for(image_dir: Path, target: TargetConfig) -> str | None:
+    """The template to render for a target, or `None` to use the Dockerfile as is.
+
+    `targets[].template` overrides; otherwise an image is templated as soon as it
+    ships a `Dockerfile.j2` next to its `config.yml`, so the common case needs no
+    config field at all.
+    """
+    if target.template is not None:
+        return target.template
+    if (image_dir / DEFAULT_TEMPLATE).exists():
+        return DEFAULT_TEMPLATE
+    return None
+
+
+def _target_repos(sha: str | ResolverSpec | None) -> list[str]:
+    """Repos tracked for a target, used as the template's `repos` context.
+
+    This is the same list `sha` feeds to `github_sha`, so a Dockerfile template
+    never has to repeat what `config.yml` already declares.
+    """
+    if sha is None:
+        return []
+    if isinstance(sha, str):
+        return [sha]
+    if sha.github_sha is not None:
+        return list(sha.github_sha.repos)
+    return []
 
 
 def resolve_value(
@@ -549,6 +585,7 @@ def main(argv: list[str] | None = None) -> int:
                     "version": build.target.version,
                     "components": dict(build.target.components),
                     "dockerfile": build.dockerfile,
+                    "template": build.template,
                     "build_target": build.build_target,
                 }
                 for build in builds
@@ -718,6 +755,61 @@ def main(argv: list[str] | None = None) -> int:
     store = BuildStateStore(actual_state_file) if actual_state_file is not None else None
 
     failure_exit_code = 0
+    rendered_dir = tempfile.mkdtemp(prefix="containerization-dockerfile-")
+    try:
+        failure_exit_code = _run_builds(
+            builds,
+            args=args,
+            store=store,
+            report=report,
+            rendered_dir=Path(rendered_dir),
+        )
+    finally:
+        shutil.rmtree(rendered_dir, ignore_errors=True)
+    report.metadata["built_entries_count"] = len(report.entries)
+    if store is not None:
+        store.save()
+    if args.report_file is not None:
+        report.write_json(args.report_file)
+    return failure_exit_code
+
+
+def _materialize_dockerfile(build: BuildPlan, rendered_dir: Path) -> str:
+    """Return the `-f` argument for one build.
+
+    Untemplated targets keep using their checked-in Dockerfile path relative to
+    the build context. Templated targets are rendered per target into a
+    temporary file outside the repository, so a rendered Dockerfile is never
+    committed and build contexts stay clean.
+    """
+    if build.template is None:
+        return build.dockerfile
+
+    template_path = build.image_dir / build.template
+    if not template_path.exists():
+        raise ValueError(f"template not found: {template_path}")
+
+    rendered = render_template(
+        template_path,
+        {"repos": list(build.repos), "version": build.target.version},
+    )
+    rendered_path = rendered_dir / (
+        f"{build.directory_name or build.target.image_name}-"
+        f"{build.target.target_name or 'default'}-Dockerfile"
+    )
+    rendered_path.write_text(rendered, encoding="utf-8")
+    return str(rendered_path)
+
+
+def _run_builds(
+    builds: list[BuildPlan],
+    *,
+    args: argparse.Namespace,
+    store: BuildStateStore | None,
+    report: BuildReport,
+    rendered_dir: Path,
+) -> int:
+    failure_exit_code = 0
     for build in builds:
         target_name = build.target.target_name or "default"
         raw_previous_state = None
@@ -735,12 +827,28 @@ def main(argv: list[str] | None = None) -> int:
             start_parts.append(f"platform={args.platform}")
         print(" ".join(start_parts))
 
+        try:
+            dockerfile = _materialize_dockerfile(build, rendered_dir)
+        except ValueError as exc:
+            print(
+                f"[build] failed image={build.target.image_name} "
+                f"target={target_name} reason={exc}"
+            )
+            report.metadata["result"] = "failure"
+            report.metadata["failure"] = {
+                "stage": "template",
+                "image_name": build.target.image_name,
+                "target_name": target_name,
+                "message": str(exc),
+            }
+            return 1
+
         command = create_build_command(
             f"{args.registry_user}/{build.target.image_name}",
             name=build.target.target_name,
             version=build.target.version,
             build_target=build.build_target,
-            dockerfile=build.dockerfile,
+            dockerfile=dockerfile,
             local=not args.push,
             platform=args.platform,
         )
@@ -793,9 +901,4 @@ def main(argv: list[str] | None = None) -> int:
         )
         if store is not None:
             store.record_success(build.target)
-    report.metadata["built_entries_count"] = len(report.entries)
-    if store is not None:
-        store.save()
-    if args.report_file is not None:
-        report.write_json(args.report_file)
     return failure_exit_code
