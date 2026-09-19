@@ -122,7 +122,6 @@ targets:
         repos:
           - caddy-dns/cloudflare
           - caddyserver/transform-encoder
-          - greenpau/caddy-security
           - greenpau/caddy-trace
   - name: rr
     target: caddy-rr
@@ -131,7 +130,6 @@ targets:
         repos:
           - caddy-dns/cloudflare
           - caddyserver/transform-encoder
-          - greenpau/caddy-security
           - greenpau/caddy-trace
           - caddyserver/replace-response
   - name: naive
@@ -141,7 +139,6 @@ targets:
         repos:
           - caddy-dns/cloudflare
           - caddyserver/transform-encoder
-          - greenpau/caddy-security
           - greenpau/caddy-trace
           - klzgrad/naiveproxy
 ```

@@ -14,7 +14,6 @@
 - 所有标签都在官方 `caddy:<version>-alpine` 基础上重新编译，并内置：
   - `github.com/caddy-dns/cloudflare`
   - `github.com/caddyserver/transform-encoder`
-  - `github.com/greenpau/caddy-security`
   - `github.com/greenpau/caddy-trace`
   - `github.com/caddyserver/replace-response`
   - `github.com/mholt/caddy-l4`

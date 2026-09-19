@@ -10,7 +10,6 @@ targets:
         repos:
           - caddy-dns/cloudflare
           - caddyserver/transform-encoder
-          - greenpau/caddy-security
           - greenpau/caddy-trace
           - mholt/caddy-l4
           - caddyserver/replace-response
@@ -21,7 +20,6 @@ targets:
         repos:
           - caddy-dns/cloudflare
           - caddyserver/transform-encoder
-          - greenpau/caddy-security
           - greenpau/caddy-trace
           - mholt/caddy-l4
           - caddyserver/replace-response

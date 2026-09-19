@@ -9,7 +9,6 @@ RUN --mount=type=cache,target=/go/pkg/mod,id=containerization-caddy-go-mod \
     xcaddy build \
       --with github.com/caddy-dns/cloudflare \
       --with github.com/caddyserver/transform-encoder \
-      --with github.com/greenpau/caddy-security \
       --with github.com/greenpau/caddy-trace \
       --with github.com/mholt/caddy-l4 \
       --with github.com/caddyserver/replace-response
@@ -21,7 +20,6 @@ RUN --mount=type=cache,target=/go/pkg/mod,id=containerization-caddy-go-mod \
     xcaddy build \
       --with github.com/caddy-dns/cloudflare \
       --with github.com/caddyserver/transform-encoder \
-      --with github.com/greenpau/caddy-security \
       --with github.com/greenpau/caddy-trace \
       --with github.com/mholt/caddy-l4 \
       --with github.com/caddyserver/replace-response \
